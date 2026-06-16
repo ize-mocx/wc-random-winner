@@ -25,7 +25,7 @@ public class TeamsController {
         return teamService.fetchTeams();
     }
 
-    @GetMapping("/teams/random")
+    @GetMapping("/teams/predict")
     public TeamResponseDto fetchRandomTeam() {
         return teamService.fetchRandomTeam();
     }

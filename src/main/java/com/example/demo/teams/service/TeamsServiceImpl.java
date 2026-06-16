@@ -1,9 +1,12 @@
 package com.example.demo.teams.service;
 
+import com.example.demo.teams.client.ApiFootballClient;
+import com.example.demo.teams.client.ApiFootballTeamResponse;
 import com.example.demo.teams.dto.TeamResponseDto;
 import com.example.demo.teams.entity.Team;
 import com.example.demo.teams.repository.TeamsRepository;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,27 +14,20 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class TeamsServiceImpl implements TeamsService {
 
-    private static final List<String> WORLD_CUP_2026_TEAMS = List.of(
-            // AFC
-            "Japan", "Iran", "Uzbekistan", "Jordan", "South Korea", "Australia", "Qatar", "Saudi Arabia", "Iraq",
-            // CAF
-            "Morocco", "Tunisia", "Egypt", "Algeria", "Ghana", "Cape Verde", "Senegal", "South Africa",
-            "Ivory Coast", "DR Congo",
-            // CONCACAF
-            "Panama", "Curacao", "Haiti", "Canada", "Mexico", "United States",
-            // CONMEBOL
-            "Argentina", "Brazil", "Ecuador", "Paraguay", "Uruguay", "Colombia",
-            // OFC
-            "New Zealand",
-            // UEFA
-            "England", "France", "Croatia", "Portugal", "Norway", "Germany", "Netherlands", "Switzerland",
-            "Scotland", "Spain", "Austria", "Belgium", "Bosnia and Herzegovina", "Sweden", "Turkey", "Czech Republic"
-    );
-
     private final TeamsRepository teamsRepository;
+    private final ApiFootballClient apiFootballClient;
+    private final int worldCupLeagueId;
+    private final int worldCupSeason;
 
-    public TeamsServiceImpl(TeamsRepository teamsRepository) {
+    public TeamsServiceImpl(
+            TeamsRepository teamsRepository,
+            ApiFootballClient apiFootballClient,
+            @Value("${api-football.world-cup.league-id}") int worldCupLeagueId,
+            @Value("${api-football.world-cup.season}") int worldCupSeason) {
         this.teamsRepository = teamsRepository;
+        this.apiFootballClient = apiFootballClient;
+        this.worldCupLeagueId = worldCupLeagueId;
+        this.worldCupSeason = worldCupSeason;
     }
 
     @Override
@@ -41,7 +37,9 @@ public class TeamsServiceImpl implements TeamsService {
 
     @Override
     public List<TeamResponseDto> seedTeams() {
-        WORLD_CUP_2026_TEAMS.stream()
+        apiFootballClient.fetchTeams(worldCupLeagueId, worldCupSeason).stream()
+                .map(ApiFootballTeamResponse::team)
+                .map(ApiFootballTeamResponse.Team::name)
                 .filter(country -> !teamsRepository.existsByCountry(country))
                 .map(this::newTeam)
                 .forEach(teamsRepository::save);
