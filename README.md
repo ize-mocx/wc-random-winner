@@ -6,16 +6,21 @@ Spring Boot REST API for World Cup 2026 teams — seed the team list, fetch all 
 
 - Java 21, Spring Boot 3.5
 - Spring Data JPA + PostgreSQL
+- Spring Security + JWT auth
 - springdoc-openapi (Swagger UI)
 - Lombok
 
 ## API
 
-| Method | Path             | Description                          |
-|--------|------------------|---------------------------------------|
-| GET    | `/api/teams`        | List all teams                     |
-| GET    | `/api/teams/random`  | Get one random team                |
-| POST   | `/api/teams/seed`    | Seed DB with WC 2026 teams (idempotent) |
+| Method | Path                  | Auth | Description                              |
+|--------|-----------------------|------|-------------------------------------------|
+| POST   | `/api/auth/signup`    | No   | Create user, returns JWT                 |
+| POST   | `/api/auth/login`     | No   | Login, returns JWT                        |
+| GET    | `/api/teams`          | Yes  | List all teams                            |
+| GET    | `/api/teams/predict`  | Yes  | Get one random team                       |
+| POST   | `/api/teams/seed`     | Yes  | Seed DB with WC 2026 teams (idempotent)   |
+
+Everything except `/api/auth/**` requires `Authorization: Bearer <token>`.
 
 Swagger UI: `http://localhost:8080/swagger-ui.html`
 
@@ -40,6 +45,8 @@ Create a `.env` file (gitignored) at the project root:
 ```
 DB_USER=postgres
 DB_PASS=postgres
+API_FOOTBALL_KEY=
+JWT_SECRET=
 ```
 
 Export before running, e.g.:
@@ -56,10 +63,19 @@ export $(grep -v '^#' .env | xargs)
 
 App starts on `http://localhost:8080`. Tables are auto-created/updated via `spring.jpa.hibernate.ddl-auto=update`.
 
-Seed teams once running:
+Sign up to get a token:
 
 ```bash
-curl -X POST http://localhost:8080/api/teams/seed
+curl -X POST http://localhost:8080/api/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"password123"}'
+```
+
+Use the returned token for everything else:
+
+```bash
+curl -X POST http://localhost:8080/api/teams/seed \
+  -H 'Authorization: Bearer <token>'
 ```
 
 ### Test
